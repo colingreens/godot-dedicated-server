@@ -1,10 +1,10 @@
-using FPSServer.Scripts;
+using Server.Scripts;
 using Godot;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+namespace Server;
 public partial class Server : Node
 {
 
@@ -12,15 +12,19 @@ public partial class Server : Node
     const int MAX_CLIENTS = 64;
     const int MAX_LOBBIES = 1;
     const int MAX_PLAYERS_PER_LOBBY = 2;
+    const int DISTANCE_BETWEEN_LOBBIES = 100;
 
     private ENetMultiplayerPeer peer;
+
     private List<Lobby> lobbies;
     private List<long> idle_clients;
+    private List<Lobby> lobby_spots;
 
     public Server()
     {
         peer = new ENetMultiplayerPeer();
         lobbies = new List<Lobby>();
+        lobby_spots = new List<Lobby>();
         idle_clients = new List<long>();
     }
 
@@ -54,11 +58,17 @@ public partial class Server : Node
             idle_clients.Remove(clientId);
             GD.Print($"Client {clientId} connected to Lobby {lobby.Name} ");
             LobbyClientsUpdated(lobby);
+            if (lobby.Clients.Count >= MAX_CLIENTS)
+            {
+                LockLobby(lobby);
+            }
             return;
         }
 
         RpcId(clientId, nameof(s_ClientCantConnectToLobby));
     }
+
+
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void s_ClientCantConnectToLobby()
@@ -96,6 +106,7 @@ public partial class Server : Node
         if (lobby.Clients.Count < 1)
         {
             lobbies.Remove(lobby);
+            lobby_spots.Remove(lobby);
             lobby.QueueFree();
         }
 
@@ -104,14 +115,50 @@ public partial class Server : Node
         GD.Print($"Client {id} disconnected from the server");
     }
 
+    private void LockLobby(Lobby lobby)
+    {
+        lobby.CurrentState = Lobby.GameState.LOCKED;
+        CreateLobbyOnClients(lobby);
+        //TODO: add rpc back to clients?
+    }
+
+    private void CreateLobbyOnClients(Lobby lobby)
+    {
+        lobby.Clients.ForEach(client => RpcId(client, nameof(CreateLobbyOnClients), lobby.Name));
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void s_CreateLobbyOnClients(string lobbyName)
+    {
+        GD.Print("Create Lobby on clients");
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void s_LobbyClientsUpdated()
+    {
+        GD.Print("Clients in lobby updated");
+    }
+
     private Lobby GetLobbyFromClientId(long id)
     {
         return lobbies.FirstOrDefault(lobby => lobby.Clients.Contains(id));
     }
 
+    private void UpdateLobbySpots()
+    {
+        var notInLobbySpot = lobbies.Where(lobby => !lobby_spots.Contains(lobby)).ToList();
+
+        lobby_spots.AddRange(notInLobbySpot);
+
+        for (int i = 0; i < lobby_spots.Count; i++)
+        {
+            lobby_spots[i].GlobalPosition = Vector3.Up * DISTANCE_BETWEEN_LOBBIES * i;
+        }
+    }
+
     private Lobby GetNonFullLobby()
     {
-        return lobbies.FirstOrDefault(lobby => lobby.Clients.Count < MAX_PLAYERS_PER_LOBBY) ?? CreateLobby();
+        return lobbies.FirstOrDefault(lobby => lobby.Clients.Count < MAX_PLAYERS_PER_LOBBY && lobby.CurrentState == Lobby.GameState.IDLE) ?? CreateLobby();
     }
 
     private Lobby CreateLobby()
@@ -124,10 +171,8 @@ public partial class Server : Node
         var newLobby = new Lobby();
         newLobby.Name = newLobby.GetInstanceId().ToString();
         lobbies.Add(newLobby);
-        AddChild(newLobby);
+        UpdateLobbySpots();
+        AddChild(newLobby, true);
         return newLobby;
     }
-
-
-
 }

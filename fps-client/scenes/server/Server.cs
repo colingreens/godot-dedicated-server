@@ -12,6 +12,7 @@ public partial class Server : Node
 
     public event Action<int, int> OnLobbyClientsUpdated;
     public event Action OnCantConnectToLobby;
+    public event Action OnLobbyLocked;
 
     private ENetMultiplayerPeer peer;
 
@@ -60,6 +61,12 @@ public partial class Server : Node
     {
         GD.Print($"{connectedClients} connected clients / {maxClients} max clients ");
         OnLobbyClientsUpdated?.Invoke(connectedClients, maxClients);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void s_CreateLobbyOnClients(string lobbyName)
+    {
+        GD.Print("Create Lobby on clients");
     }
 
 

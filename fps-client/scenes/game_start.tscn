@@ -34,6 +34,10 @@ theme_override_constants/separation = 8
 layout_mode = 2
 text = "Connect To Lobby"
 
+[node name="LeaveLobby" type="Button" parent="UI/Play Buttons"]
+layout_mode = 2
+text = "Leave Lobby"
+
 [node name="Start" type="Button" parent="UI/Play Buttons"]
 layout_mode = 2
 text = "Play"

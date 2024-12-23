@@ -10,6 +10,7 @@ public partial class GameStart : Node
     private Label maxPlayers;
 
     private Button findLobby;
+    private Button leaveLobby;
     private Button start;
     private Button quit;
 
@@ -25,11 +26,13 @@ public partial class GameStart : Node
         maxPlayers = GetNode<Label>("UI/Play Buttons/LobbyInfo/MaxPlayers");
 
         findLobby = GetNode<Button>("UI/Play Buttons/FindLobby");
+        leaveLobby = GetNode<Button>("UI/Play Buttons/LeaveLobby");
         start = GetNode<Button>("UI/Play Buttons/Start");
         quit = GetNode<Button>("UI/Play Buttons/Quit");
 
         //connect to button events
         findLobby.Pressed += OnFindLobbyPressed;
+        leaveLobby.Pressed += OnLeaveLobbyPressed;
         start.Pressed += OnStartPressed;
         quit.Pressed += OnQuitPressed;
 
@@ -43,6 +46,11 @@ public partial class GameStart : Node
     private void OnFindLobbyPressed()
     {
         _server.TryConnectClientToLobby();
+    }
+
+    private void OnLeaveLobbyPressed()
+    {
+        //server call leave lobby
     }
 
     private void OnStartPressed()
