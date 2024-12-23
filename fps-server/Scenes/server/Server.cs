@@ -1,18 +1,27 @@
+using FPSServer.Scripts;
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 public partial class Server : Node
 {
 
     const int PORT = 7777;
     const int MAX_CLIENTS = 64;
+    const int MAX_LOBBIES = 1;
+    const int MAX_PLAYERS_PER_LOBBY = 2;
 
     private ENetMultiplayerPeer peer;
+    private List<Lobby> lobbies;
+    private List<long> idle_clients;
 
     public Server()
     {
         peer = new ENetMultiplayerPeer();
+        lobbies = new List<Lobby>();
+        idle_clients = new List<long>();
     }
 
     public override void _Ready()
@@ -25,20 +34,80 @@ public partial class Server : Node
             return;
         }
 
+        Debug.Print("Server has started");
+
         Multiplayer.MultiplayerPeer = peer;
 
         peer.PeerConnected += OnPeerConnected;
         peer.PeerDisconnected += OnPeerDisconnected;
     }
 
-    private void OnPeerDisconnected(long id)
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void c_TryConnectClientToLobby()
     {
-        Debug.Print($"Client {id} disconnected from the server");
-    }
+        var clientId = Multiplayer.GetRemoteSenderId();
+        var lobby = GetNonFullLobby();
 
+        if (lobby != null)
+        {
+            lobby.AddClient(clientId);
+            idle_clients.Remove(clientId);
+            GD.Print($"Client {clientId} connected to Lobby {lobby.Name} ");
+        }
+
+        // TODO: LOGIC if lobbies are full 
+    }
 
     private void OnPeerConnected(long id)
     {
-        Debug.Print($"Client {id} connected to server");
+        idle_clients.Add(id);
+        GD.Print($"Client {id} connected to server");
     }
+
+    private void OnPeerDisconnected(long id)
+    {
+        var lobby = GetLobbyFromClientId(id);
+        if (lobby == null)
+        {
+            return;
+        }
+
+        lobby.RemoveClient(id);
+        if (lobby.Clients.Count < 1)
+        {
+            lobbies.Remove(lobby);
+            lobby.QueueFree();
+        }
+
+        idle_clients.Remove(id);
+
+        GD.Print($"Client {id} disconnected from the server");
+    }
+
+    private Lobby GetLobbyFromClientId(long id)
+    {
+        return lobbies.FirstOrDefault(lobby => lobby.Clients.Contains(id));
+    }
+
+    private Lobby GetNonFullLobby()
+    {
+        return lobbies.FirstOrDefault(lobby => lobby.Clients.Count < MAX_PLAYERS_PER_LOBBY) ?? CreateLobby();
+    }
+
+    private Lobby CreateLobby()
+    {
+        if (lobbies.Count > MAX_LOBBIES)
+        {
+            return null;
+        }
+
+        var newLobby = new Lobby();
+        newLobby.Name = newLobby.GetInstanceId().ToString();
+        lobbies.Add(newLobby);
+        AddChild(newLobby);
+        return newLobby;
+    }
+
+
+
 }

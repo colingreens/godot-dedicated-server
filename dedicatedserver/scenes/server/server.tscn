@@ -1,3 +1,6 @@
-[gd_scene format=3 uid="uid://bqaqamsd57ray"]
+[gd_scene load_steps=2 format=3 uid="uid://bqaqamsd57ray"]
+
+[ext_resource type="Script" path="res://scenes/server/Server.cs" id="1_moryp"]
 
 [node name="Server" type="Node"]
+script = ExtResource("1_moryp")
