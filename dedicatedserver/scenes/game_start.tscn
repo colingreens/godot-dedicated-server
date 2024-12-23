@@ -1,19 +1,9 @@
 [gd_scene load_steps=2 format=3 uid="uid://d4g4a4t7gdxul"]
 
-[sub_resource type="GDScript" id="GDScript_e2hhb"]
-script/source = "extends Node
-
-
-func _on_find_lobby_pressed() -> void:
-	Server.TryConnectClientToLobby()
-
-
-func _on_start_pressed() -> void:
-	pass # Replace with function body.
-"
+[ext_resource type="Script" path="res://scenes/GameStart.cs" id="1_50xdt"]
 
 [node name="GameStart" type="Node"]
-script = SubResource("GDScript_e2hhb")
+script = ExtResource("1_50xdt")
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
@@ -23,24 +13,49 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UI"]
+[node name="Play Buttons" type="VBoxContainer" parent="UI"]
 layout_mode = 1
-anchors_preset = 14
+anchors_preset = 8
+anchor_left = 0.5
 anchor_top = 0.5
-anchor_right = 1.0
+anchor_right = 0.5
 anchor_bottom = 0.5
-offset_top = -15.5
-offset_bottom = 15.5
+offset_left = -73.0
+offset_top = -83.5
+offset_right = 73.0
+offset_bottom = 83.5
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 8
 
-[node name="FindLobby" type="Button" parent="UI/VBoxContainer"]
+[node name="FindLobby" type="Button" parent="UI/Play Buttons"]
 layout_mode = 2
 text = "Connect To Lobby"
 
-[node name="Start" type="Button" parent="UI/VBoxContainer"]
+[node name="Start" type="Button" parent="UI/Play Buttons"]
 layout_mode = 2
 text = "Play"
 
-[connection signal="pressed" from="UI/VBoxContainer/FindLobby" to="." method="_on_find_lobby_pressed"]
-[connection signal="pressed" from="UI/VBoxContainer/Start" to="." method="_on_start_pressed"]
+[node name="Quit" type="Button" parent="UI/Play Buttons"]
+layout_mode = 2
+text = "Quit"
+
+[node name="LobbyInfo" type="VBoxContainer" parent="UI/Play Buttons"]
+layout_mode = 2
+
+[node name="InLobby" type="Label" parent="UI/Play Buttons/LobbyInfo"]
+visible = false
+layout_mode = 2
+text = "In Lobby
+"
+
+[node name="LobbyPlayers" type="Label" parent="UI/Play Buttons/LobbyInfo"]
+layout_mode = 2
+text = "Current Players"
+
+[node name="MaxPlayers" type="Label" parent="UI/Play Buttons/LobbyInfo"]
+layout_mode = 2
+text = "Max Players
+"

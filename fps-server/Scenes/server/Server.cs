@@ -53,9 +53,28 @@ public partial class Server : Node
             lobby.AddClient(clientId);
             idle_clients.Remove(clientId);
             GD.Print($"Client {clientId} connected to Lobby {lobby.Name} ");
+            LobbyClientsUpdated(lobby);
+            return;
         }
 
-        // TODO: LOGIC if lobbies are full 
+        RpcId(clientId, nameof(s_ClientCantConnectToLobby));
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void s_ClientCantConnectToLobby()
+    {
+        GD.Print("Client cannot connect to lobby");
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void s_LobbyClientsUpdated(int connectedClients, int maxClients)
+    {
+        GD.Print("Clients in lobby updated");
+    }
+
+    public void LobbyClientsUpdated(Lobby lobby)
+    {
+        lobby.Clients.ForEach(client => RpcId(client, nameof(s_LobbyClientsUpdated), lobby.Clients.Count.ToString(), MAX_CLIENTS));
     }
 
     private void OnPeerConnected(long id)
@@ -73,6 +92,7 @@ public partial class Server : Node
         }
 
         lobby.RemoveClient(id);
+        LobbyClientsUpdated(lobby);
         if (lobby.Clients.Count < 1)
         {
             lobbies.Remove(lobby);
