@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://kte3r1tb1bt7"]
+
+[ext_resource type="Script" path="res://scenes/characters/HealthComponent.cs" id="1_n6lyt"]
+
+[node name="HealthComponent" type="Node3D"]
+script = ExtResource("1_n6lyt")
+verbose = true

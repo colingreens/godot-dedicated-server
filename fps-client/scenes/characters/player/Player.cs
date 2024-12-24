@@ -9,20 +9,31 @@ public partial class Player : CharacterBody3D
 
     private Camera3D camera;
     private CharacterMover characterMover;
+    private HealthComponent health;
 
     private float _verticalRotation = 0.0f;
-    private float clampedLookRads = Mathf.DegToRad(90);
+    private float _clampedLookRads = Mathf.DegToRad(90);
+
+    private bool _dead = false;
 
     public override void _Ready()
     {
         camera = GetNode<Camera3D>("Camera3D");
         characterMover = GetNode<CharacterMover>("CharacterMover");
+        health = GetNode<HealthComponent>("HealthComponent");
 
         Input.MouseMode = Input.MouseModeEnum.Captured;
+
+        health.Died += Kill;
     }
 
     public override void _Input(InputEvent @event)
     {
+        if (_dead)
+        {
+            return;
+        }
+
         if (@event is InputEventMouseMotion motionEvent)
         {
             RotateY(-motionEvent.Relative.X * MouseSensitivityH);
@@ -30,7 +41,7 @@ public partial class Player : CharacterBody3D
 
             // Update and clamp the vertical rotation
             _verticalRotation += -motionEvent.Relative.Y * MouseSensitivityV;
-            _verticalRotation = Mathf.Clamp(_verticalRotation, -clampedLookRads, clampedLookRads);
+            _verticalRotation = Mathf.Clamp(_verticalRotation, -_clampedLookRads, _clampedLookRads);
 
             // Apply the clamped rotation to the camera
             var cameraRotation = camera.Rotation;
@@ -64,6 +75,11 @@ public partial class Player : CharacterBody3D
             }
         }
 
+        if (_dead)
+        {
+            return;
+        }
+
         var inputDir = Input.GetVector("move_left", "move_right", "move_forwards", "move_backwards");
         var moveDir = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
 
@@ -72,5 +88,11 @@ public partial class Player : CharacterBody3D
         {
             characterMover.Jump();
         }
+    }
+
+    private void Kill()
+    {
+        _dead = true;
+        characterMover.SetMoveDirection(Vector3.Zero);
     }
 }
